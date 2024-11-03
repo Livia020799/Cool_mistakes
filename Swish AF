@@ -1,0 +1,51 @@
+###########
+#Libraries#
+###########
+
+import jax
+import jax.numpy as jnp
+from functools import partial #for @partial
+%pip install jaxtyping --quiet
+from jaxtyping import Array, Float, Int
+
+def init_fcn(key, n):
+  key1, key2, key3, key4 = jax.random.split(key, 4)
+  a = jax.random.normal(key1, (n,))
+  b = jax.random.normal(key2, (n,))
+  c = jax.random.normal(key3, (n,))
+  d = jax.random.normal(key4, (n,))
+  return (a, b, c, d)
+
+@partial(jax.vmap, in_axes = (None, 0))
+def call_fcn(params, x: Float[Array, "b"]) -> Float[Array, "b"]:
+  a = params[0]
+  b = params[1]
+  c = params[2]
+  d = params[3]
+  phi = jnp.sum((a * x + b) * jax.nn.sigmoid(c * x + d))
+  return phi
+
+###############
+#Visualization#
+###############
+
+import matplotlib.pyplot as plt
+
+b = 300
+key = jax.random.PRNGKey(0)
+
+plt.figure(figsize=(10, 6))
+
+for n in [10, 20, 30, 40, 50, 60]:
+    params = init_fcn(key, n)
+    key, subkey = jax.random.split(key)
+    x = jax.random.normal(subkey, (b, n))   
+    y = call_fcn(params, x)
+    plt.plot(x, y, label=f'n = {n}')
+
+plt.title("Trainable variant of the Swish function $\\phi(s)$ for different values of $n$")
+plt.xlabel("s")
+plt.ylabel("φ(s)")
+plt.legend()
+plt.grid(True)
+plt.show()
